@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>GoTrust Pay – MODE DEMO</title>
+<title>GoTrust Pay – Login Réinitialisé</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{margin:0;font-family:Arial;background:#f4f6f8}
@@ -10,7 +10,7 @@ header{background:#0a2540;color:#fff;padding:15px;text-align:center}
 .card{background:#fff;border-radius:10px;padding:15px;margin:15px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
 button{background:#00c389;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;width:100%;cursor:pointer;margin-top:8px}
 button.danger{background:#e74c3c}
-input,select{width:100%;padding:10px;margin:6px 0}
+input,select{width:100%;padding:10px;margin:6px 0;box-sizing:border-box}
 .hidden{display:none}
 .badge{background:#00c389;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
 nav button{margin:4px}
@@ -20,15 +20,15 @@ nav button{margin:4px}
 <body>
 
 <header>
-<h2>GoTrust Pay</h2>
-<p>Plateforme financière – MODE DEMO</p>
+<h2>GoTrust Pay – MODE DEMO</h2>
+<p>Connexion sécurisée</p>
 </header>
 
 <!-- ACCUEIL -->
 <section id="home" class="card">
 <h3>Bienvenue</h3>
 <p>Accédez à votre espace financier.</p>
-<button onclick="openLogin()">Connexion / Inscription</button>
+<button onclick="openLogin()">Connexion</button>
 </section>
 
 <!-- LOGIN -->
@@ -42,17 +42,16 @@ nav button{margin:4px}
 <option value="admin">Administrateur</option>
 </select>
 
-<label>Nom</label>
+<label>Nom / Identifiant</label>
 <input id="name" placeholder="Ex : GOPAY">
 
-<label>Mot de passe</label>
+<label>Mot de passe (6 chiffres minimum)</label>
 <input id="password" type="password" placeholder="Mot de passe">
 
 <button onclick="login()">Entrer dans l’interface</button>
-
 <p style="font-size:12px;color:#555">
 Admin : GOPAY / admin243<br>
-Clients & agents : accès automatique
+Client & Agent : mot de passe de 6 chiffres obligatoire
 </p>
 </section>
 
@@ -112,7 +111,14 @@ function login(){
  const r=role.value;
  const n=name.value.trim();
  const p=password.value.trim();
- if(!n || !p){alert("Champs obligatoires");return;}
+
+ if(!n || !p){alert("Champs obligatoires"); return;}
+
+ // Mot de passe 6 chiffres minimum
+ if(!/^\d{6,}$/.test(p) && r!=="admin"){
+   alert("Mot de passe invalide : 6 chiffres minimum");
+   return;
+ }
 
  // ADMIN FIXE
  if(r==="admin"){
@@ -127,19 +133,12 @@ function login(){
    }
  }
 
- // CLIENT / AGENT AUTO
+ // CLIENT / AGENT : accès facile (pas de création automatique)
  let users=JSON.parse(localStorage.users);
- current=users.find(u=>u.name===n && u.role===r);
+ current=users.find(u=>u.name===n && u.role===r && u.password===p);
  if(!current){
-   current={
-     id:Math.floor(10000000+Math.random()*90000000),
-     name:n,
-     role:r,
-     balance:0,
-     history:[]
-   };
-   users.push(current);
-   localStorage.users=JSON.stringify(users);
+   alert("Utilisateur introuvable ou mot de passe incorrect");
+   return;
  }
 
  login.classList.add("hidden");
@@ -154,7 +153,7 @@ function renderDash(){
  <p>Solde : <b>${current.balance} FC</b></p>
  <span class="badge">ACTIF</span>
  <hr>
- ${current.history.length?current.history.join("<br>"):"Aucune activité"}
+ ${current.history && current.history.length ? current.history.join("<br>") : "Aucune activité"}
  `;
 }
 
@@ -165,38 +164,41 @@ function view(v){
 
 function deposit(){
  let a=+depAmt.value;
- if(a<=0)return;
+ if(a<=0) return;
  current.balance+=a;
  current.history.push("Dépôt +"+a);
- save();renderDash();
+ save(); renderDash();
 }
 function send(){
  let a=+sendAmt.value;
- if(a<=0 || a>current.balance)return;
+ if(a<=0 || a>current.balance) return;
  current.balance-=a;
  current.history.push("Envoi -"+a);
- save();renderDash();
+ save(); renderDash();
 }
 function withdraw(){
  let a=+withAmt.value;
- if(a<=0 || a>current.balance)return;
+ if(a<=0 || a>current.balance) return;
  current.balance-=a;
  current.history.push("Retrait -"+a);
- save();renderDash();
+ save(); renderDash();
 }
 
+/* ADMIN */
+function loadAdmin(){
+ let usersArr=JSON.parse(localStorage.users);
+ userList.innerHTML=usersArr.map(u=>`${u.name} (${u.role}) – ${u.balance || 0} FC`).join("<br>");
+}
+
+/* SAVE */
 function save(){
  let users=JSON.parse(localStorage.users);
  let i=users.findIndex(u=>u.id===current.id);
- users[i]=current;
+ if(i>=0) users[i]=current;
  localStorage.users=JSON.stringify(users);
 }
 
-function loadAdmin(){
- let users=JSON.parse(localStorage.users);
- userList.innerHTML=users.map(u=>`${u.name} (${u.role}) – ${u.balance} FC`).join("<br>");
-}
-
+/* LOGOUT */
 function logout(){location.reload();}
 </script>
 
