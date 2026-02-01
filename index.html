@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>GoTrust Pay – Produit Final</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+ --primary:#0b3c5d;
+ --accent:#1abc9c;
+ --bg:#f4f6f8;
+ --danger:#e74c3c;
+}
+body{margin:0;font-family:Arial;background:var(--bg)}
+header{background:var(--primary);color:#fff;padding:15px;text-align:center}
+section{padding:15px}
+.card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+button{background:var(--accent);border:none;padding:10px 15px;border-radius:6px;font-weight:bold;cursor:pointer}
+button.danger{background:var(--danger);color:#fff}
+input,select,textarea{width:100%;padding:8px;margin:5px 0}
+.hidden{display:none}
+.badge{padding:4px 8px;border-radius:5px;font-size:12px}
+.active{background:var(--accent)}
+.inactive{background:#ccc}
+.small{font-size:12px;color:#555}
+nav button{margin:3px}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>GoTrust Pay</h2>
+<p>Plateforme financière inclusive – Démo avancée</p>
+</header>
+
+<section id="home" class="card">
+<h3>Bienvenue</h3>
+<p>Finance digitale sécurisée pour zones fragiles</p>
+<button onclick="showAuth()">Connexion / Inscription</button>
+</section>
+
+<section id="auth" class="card hidden">
+<h3>Connexion / Inscription</h3>
+<select id="role">
+<option value="client">Client</option>
+<option value="agent">GoPay Agent</option>
+<option value="admin">Administrateur</option>
+</select>
+<input id="name" placeholder="Nom complet">
+<input id="pin" placeholder="Mot de passe (8 chiffres)">
+<button onclick="login()">Entrer</button>
+<p class="small">⚠️ Compte inactif sans dépôt minimum</p>
+</section>
+
+<section id="client" class="hidden">
+<nav>
+<button onclick="view('dash')">Dashboard</button>
+<button onclick="view('deposit')">Dépôt</button>
+<button onclick="view('send')">Envoi</button>
+<button onclick="view('withdraw')">Retrait</button>
+<button onclick="logout()" class="danger">Déconnexion</button>
+</nav>
+
+<div id="dash" class="card"></div>
+
+<div id="deposit" class="card hidden">
+<h4>Dépôt</h4>
+<input id="depAmt" type="number" placeholder="Montant">
+<select id="depNet">
+<option>Airtel</option><option>Orange</option><option>Vodacom</option><option>GoPay</option>
+</select>
+<button onclick="deposit()">Confirmer</button>
+</div>
+
+<div id="send" class="card hidden">
+<h4>Envoyer</h4>
+<input id="sendAmt" type="number" placeholder="Montant">
+<input id="sendID" placeholder="ID destinataire">
+<button onclick="send()">Envoyer</button>
+</div>
+
+<div id="withdraw" class="card hidden">
+<h4>Demande de retrait</h4>
+<input id="withAmt" type="number" placeholder="Montant">
+<button onclick="requestWithdraw()">Soumettre</button>
+</div>
+</section>
+
+<section id="admin" class="hidden">
+<h3>Administration</h3>
+<div class="card">
+<p>Solde plateforme : <b id="adminBal"></b> FC</p>
+</div>
+
+<div class="card">
+<h4>Demandes de retrait</h4>
+<div id="withdrawList"></div>
+</div>
+
+<div class="card">
+<h4>Activités récentes</h4>
+<div id="activity"></div>
+</div>
+
+<button onclick="logout()" class="danger">Déconnexion</button>
+</section>
+
+<script>
+/* ===== INIT ===== */
+if(!localStorage.users) localStorage.users="[]";
+if(!localStorage.withdraws) localStorage.withdraws="[]";
+if(!localStorage.adminBal) localStorage.adminBal=1000000;
+let current=null;
+
+/* ===== UTILS ===== */
+const users=()=>JSON.parse(localStorage.users);
+const saveUsers=u=>localStorage.users=JSON.stringify(u);
+const wid=()=>Math.floor(Math.random()*1e8).toString().padStart(8,"0");
+const notify=m=>alert("📩 Notification : "+m);
+
+/* ===== AUTH ===== */
+function showAuth(){home.classList.add("hidden");auth.classList.remove("hidden")}
+function login(){
+ let u=users();
+ let id=wid();
+ current={
+  id,role:role.value,name:name.value,
+  pin:pin.value,balance:0,active:false,
+  history:[],card:"GT-"+wid()
+ };
+ u.push(current);saveUsers(u);
+ auth.classList.add("hidden");
+ if(current.role==="admin"){admin.classList.remove("hidden");loadAdmin()}
+ else{client.classList.remove("hidden");renderDash()}
+}
+
+/* ===== CLIENT ===== */
+function renderDash(){
+ dash.innerHTML=`
+ <h3>${current.name}</h3>
+ <p>ID : ${current.id}</p>
+ <p>Carte : ${current.card}</p>
+ <p>Solde : <b>${current.balance} FC</b></p>
+ <span class="badge ${current.active?'active':'inactive'}">
+ ${current.active?'ACTIF':'INACTIF'}
+ </span>
+ <br><img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${current.id}">
+ `;
+}
+function view(v){
+ ["dash","deposit","send","withdraw"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+ document.getElementById(v).classList.remove("hidden");
+}
+function deposit(){
+ let a=+depAmt.value;
+ if(a<=0)return;
+ current.balance+=a;
+ current.active=true;
+ localStorage.adminBal-=a;
+ current.history.push("Dépôt +"+a);
+ updateUser();
+ notify("Dépôt réussi");
+ renderDash();
+}
+function send(){
+ let a=+sendAmt.value;
+ if(!current.active)return alert("Compte inactif");
+ let u=users().find(x=>x.id===sendID.value);
+ if(!u)return alert("Introuvable");
+ let com=Math.floor(a*0.01);
+ current.balance-=a;
+ u.balance+=(a-com);
+ localStorage.adminBal=+localStorage.adminBal+com;
+ current.history.push("Envoi -"+a);
+ u.history.push("Reçu +"+(a-com));
+ updateUser(u);
+ notify("Envoi effectué");
+ renderDash();
+}
+function requestWithdraw(){
+ let a=+withAmt.value;
+ let list=JSON.parse(localStorage.withdraws);
+ list.push({id:current.id,amount:a});
+ localStorage.withdraws=JSON.stringify(list);
+ notify("Demande envoyée – en attente");
+}
+
+/* ===== ADMIN ===== */
+function loadAdmin(){
+ adminBal.innerText=localStorage.adminBal;
+ let list=JSON.parse(localStorage.withdraws);
+ withdrawList.innerHTML=list.map((w,i)=>`
+ <div>
+ ${w.id} – ${w.amount} FC
+ <button onclick="approve(${i})">Confirmer</button>
+ </div>`).join("");
+}
+function approve(i){
+ let list=JSON.parse(localStorage.withdraws);
+ let w=list[i];
+ let u=users().find(x=>x.id===w.id);
+ let com=Math.floor(w.amount*0.02);
+ u.balance-=(w.amount+com);
+ localStorage.adminBal=+localStorage.adminBal+com;
+ list.splice(i,1);
+ localStorage.withdraws=JSON.stringify(list);
+ updateUser(u);
+ loadAdmin();
+ notify("Retrait confirmé");
+}
+
+/* ===== SAVE ===== */
+function updateUser(extra){
+ let u=users();
+ let i=u.findIndex(x=>x.id===current.id);
+ u[i]=current;
+ if(extra){
+  let j=u.findIndex(x=>x.id===extra.id);
+  u[j]=extra;
+ }
+ saveUsers(u);
+}
+
+/* ===== LOGOUT ===== */
+function logout(){location.reload()}
+</script>
+
+</body>
+</html>
