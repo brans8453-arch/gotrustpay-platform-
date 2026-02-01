@@ -24,17 +24,11 @@ nav button{margin:4px}
 <p>Plateforme financière – MODE DEMO</p>
 </header>
 
-<!-- ACCUEIL -->
-<section id="home" class="card">
-<h3>Bienvenue</h3>
-<p>Accédez à votre espace financier.</p>
-<button onclick="openLogin()">Connexion</button>
-</section>
-
-<!-- LOGIN (NE BLOQUE PLUS) -->
-<section id="login" class="card hidden">
+<!-- LOGIN VISIBLE DIRECTEMENT -->
+<section id="login" class="card">
 <h3>Connexion</h3>
 
+<label>Rôle</label>
 <select id="role">
 <option value="client">Client</option>
 <option value="agent">Agent</option>
@@ -48,12 +42,12 @@ nav button{margin:4px}
 
 <p style="font-size:12px;color:#555">
 Admin : GOPAY / admin243<br>
-Clients & Agents : accès libre (6 chiffres min)
+Clients & Agents : mot de passe de 6 chiffres minimum
 </p>
 </section>
 
 <!-- CLIENT / AGENT -->
-<section id="user" class="hidden">
+<section id="user" class="card hidden">
 <nav>
 <button onclick="view('dash')">Dashboard</button>
 <button onclick="view('deposit')">Dépôt</button>
@@ -104,8 +98,8 @@ Clients & Agents : accès libre (6 chiffres min)
 </section>
 
 <!-- ADMIN -->
-<section id="admin" class="hidden">
-<div class="card">
+<section id="admin" class="card hidden">
+<div>
 <h3>Espace Administrateur</h3>
 <span class="badge">ADMIN CONNECTÉ</span>
 </div>
@@ -122,11 +116,6 @@ Clients & Agents : accès libre (6 chiffres min)
 let current=null;
 let logs=[];
 
-function openLogin(){
- home.classList.add("hidden");
- login.classList.remove("hidden");
-}
-
 function login(){
  const r=role.value;
  const n=name.value.trim();
@@ -134,7 +123,7 @@ function login(){
 
  if(!n || !p){alert("Champs obligatoires");return;}
 
- // ADMIN FIXE (SEUL CAS VÉRIFIÉ)
+ // ADMIN
  if(r==="admin"){
    if(n==="GOPAY" && p==="admin243"){
      login.classList.add("hidden");
@@ -147,9 +136,9 @@ function login(){
    }
  }
 
- // CLIENT / AGENT → ACCÈS TOUJOURS AUTORISÉ
+ // CLIENT / AGENT : accès direct, mot de passe 6 chiffres minimum
  if(!/^\d{6,}$/.test(p)){
-   alert("Mot de passe : 6 chiffres minimum");
+   alert("Mot de passe invalide : 6 chiffres minimum");
    return;
  }
 
@@ -181,7 +170,7 @@ function view(v){
  document.getElementById(v).classList.remove("hidden");
 }
 
-/* VALIDATIONS SIMULÉES */
+/* VALIDATION SIMULÉE */
 function deposit(){
  let a=+depAmt.value;
  let s=depService.value;
