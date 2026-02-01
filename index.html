@@ -2,262 +2,209 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>GoTrust Pay – Version Pro</title>
+<title>GoTrust Pay – Plateforme Financière</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 :root{
- --primary:#0b3c5d;
- --accent:#1abc9c;
- --bg:#f4f6f8;
+ --primary:#0a2540;
+ --accent:#00c389;
  --danger:#e74c3c;
+ --bg:#f2f5f9;
+ --card:#ffffff;
 }
-body{margin:0;font-family:Arial;background:var(--bg)}
-header{background:var(--primary);color:#fff;padding:15px;text-align:center}
-section{padding:15px}
-.card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
-button{background:var(--accent);border:none;padding:10px 15px;border-radius:6px;font-weight:bold;cursor:pointer}
-button.danger{background:var(--danger);color:#fff}
-input,select{width:100%;padding:8px;margin:5px 0}
+body{margin:0;font-family:Segoe UI,Arial;background:var(--bg)}
+header{
+ background:var(--primary);
+ color:#fff;
+ padding:15px;
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+}
+.badge{
+ background:#f39c12;
+ color:#000;
+ padding:4px 8px;
+ border-radius:5px;
+ font-size:12px;
+ font-weight:bold;
+}
+section{padding:20px}
+.card{
+ background:var(--card);
+ border-radius:12px;
+ padding:20px;
+ box-shadow:0 6px 15px rgba(0,0,0,.1);
+ margin-bottom:15px;
+}
+input,select{
+ width:100%;
+ padding:10px;
+ margin:8px 0;
+ border-radius:6px;
+ border:1px solid #ccc;
+}
+button{
+ background:var(--accent);
+ color:#fff;
+ border:none;
+ padding:10px 15px;
+ border-radius:6px;
+ font-weight:bold;
+ cursor:pointer;
+}
+button.danger{background:var(--danger)}
 .hidden{display:none}
-.badge{padding:4px 8px;border-radius:5px;font-size:12px;color:#fff}
-.active{background:var(--accent)}
-.inactive{background:#999}
-nav button{margin:3px}
-.small{font-size:12px;color:#555}
-hr{border:none;border-top:1px solid #ddd}
+nav button{margin:4px}
+.stat{font-size:18px;font-weight:bold}
+footer{
+ text-align:center;
+ font-size:12px;
+ color:#555;
+ padding:10px;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-<h2>GoTrust Pay</h2>
-<p>Plateforme financière – Version Pro GitHub Pages</p>
+ <div>
+   <strong>GoTrust Pay</strong><br>
+   <small>Plateforme financière</small>
+ </div>
+ <div class="badge">MODE DEMO</div>
 </header>
 
+<!-- ACCUEIL -->
 <section id="home" class="card">
-<button onclick="showAuth()">Connexion / Inscription</button>
+<h3>Bienvenue</h3>
+<p>Accédez à votre espace financier sécurisé.</p>
+<button onclick="openAuth()">Connexion / Inscription</button>
 </section>
 
+<!-- AUTH -->
 <section id="auth" class="card hidden">
+<h3>Connexion</h3>
 <select id="role">
-<option value="client">Client</option>
-<option value="agent">Agent GoPay</option>
-<option value="admin">Administrateur</option>
+ <option value="client">Client</option>
+ <option value="agent">Agent GoPay</option>
+ <option value="admin">Administrateur</option>
 </select>
-<input id="name" placeholder="Nom" />
-<input id="pin" type="password" placeholder="PIN (4 à 6 chiffres)" />
+<input placeholder="Identifiant (libre)">
+<input type="password" placeholder="Mot de passe / PIN (libre)">
 <button onclick="login()">Entrer</button>
-<p class="small">Après inscription, tous les comptes sont automatiquement activés</p>
+<p style="font-size:12px;color:#666">
+Tous les comptes sont automatiquement activés (DEMO)
+</p>
 </section>
 
-<section id="client" class="hidden">
+<!-- CLIENT / AGENT -->
+<section id="user" class="hidden">
 <nav>
-<button onclick="view('dash')">Dashboard</button>
-<button onclick="view('deposit')">Dépôt</button>
-<button onclick="view('send')">Envoi</button>
-<button onclick="view('withdraw')">Retrait</button>
-<button onclick="logout()" class="danger">Déconnexion</button>
+ <button onclick="show('dashboard')">Dashboard</button>
+ <button onclick="show('deposit')">Dépôt</button>
+ <button onclick="show('send')">Transfert</button>
+ <button onclick="show('withdraw')">Retrait</button>
+ <button onclick="logout()" class="danger">Déconnexion</button>
 </nav>
 
-<div id="dash" class="card"></div>
+<div id="dashboard" class="card"></div>
 
 <div id="deposit" class="card hidden">
-<input id="depAmt" type="number" placeholder="Montant dépôt">
-<button onclick="deposit()">Confirmer</button>
+<h4>Dépôt</h4>
+<input id="dep" type="number" placeholder="Montant">
+<button onclick="deposit()">Valider</button>
 </div>
 
 <div id="send" class="card hidden">
-<input id="sendID" placeholder="ID destinataire">
-<input id="sendAmt" type="number" placeholder="Montant">
+<h4>Transfert</h4>
+<input placeholder="ID bénéficiaire">
+<input id="snd" type="number" placeholder="Montant">
 <button onclick="send()">Envoyer</button>
 </div>
 
 <div id="withdraw" class="card hidden">
-<input id="withAmt" type="number" placeholder="Montant retrait">
-<button onclick="requestWithdraw()">Demander</button>
+<h4>Retrait</h4>
+<input id="wd" type="number" placeholder="Montant">
+<button onclick="withdraw()">Confirmer</button>
 </div>
 </section>
 
+<!-- ADMIN -->
 <section id="admin" class="hidden">
 <div class="card">
-<h3>Administration – GOPAY</h3>
-<p>Solde plateforme : <b id="adminBal"></b> FC</p>
+<h3>Administration GoPay</h3>
+<p class="stat">Accès total (DEMO)</p>
+<ul>
+ <li>Gestion des utilisateurs</li>
+ <li>Validation des transactions</li>
+ <li>Monitoring système</li>
+</ul>
 </div>
-
-<div class="card">
-<h4>Utilisateurs</h4>
-<div id="userList"></div>
-</div>
-
-<div class="card">
-<h4>Demandes de retrait</h4>
-<div id="withdrawList"></div>
-</div>
-
 <button onclick="logout()" class="danger">Déconnexion</button>
 </section>
 
+<footer>
+© GoTrust Pay – Version Démonstration GitHub Pages
+</footer>
+
 <script>
-// Initialisation
-if(!localStorage.users) localStorage.users="[]";
-if(!localStorage.withdraws) localStorage.withdraws="[]";
-if(!localStorage.adminBal) localStorage.adminBal=1000000;
+let balance = 0;
+let currentRole = "client";
 
-let current=null;
-const users=()=>JSON.parse(localStorage.users);
-const saveUsers=u=>localStorage.users=JSON.stringify(u);
-const wid=()=>Math.floor(Math.random()*1e8).toString();
-
-// Afficher formulaire
-function showAuth(){
+function openAuth(){
  home.classList.add("hidden");
  auth.classList.remove("hidden");
 }
 
-// Connexion / inscription
 function login(){
- const r=role.value;
- const n=name.value.trim();
- const p=pin.value.trim();
-
- if(r!=="admin" && !/^\d{4,6}$/.test(p)){
-   alert("PIN invalide : 4 à 6 chiffres uniquement");
-   return;
- }
-
- // Connexion admin fiable
- if(r==="admin"){
-   const nomAdmin = n.toUpperCase().trim();
-   const pinAdmin = p.trim();
-   if(nomAdmin === "GOPAY" && pinAdmin === "admin243"){
-       auth.classList.add("hidden");
-       admin.classList.remove("hidden");
-       loadAdmin();
-       return;
-   } else {
-       alert("Accès administrateur refusé : nom ou PIN incorrect");
-       return;
-   }
- }
-
- // Connexion client / agent
- let u=users();
- let found=u.find(x=>x.name===n && x.pin===p && x.role===r);
-
- if(found){
-   current=found;
-   current.active = true; // ⚡ Activation automatique pour tous
-   save();
- } else {
-   current={id:wid(),role:r,name:n,pin:p,balance:0,active:true,history:[]};
-   u.push(current);
-   saveUsers(u);
- }
-
+ currentRole = role.value;
  auth.classList.add("hidden");
- client.classList.remove("hidden");
- renderDash();
+
+ if(currentRole === "admin"){
+   admin.classList.remove("hidden");
+ }else{
+   user.classList.remove("hidden");
+   renderDash();
+ }
 }
 
-// Tableau de bord
 function renderDash(){
- dash.innerHTML=`
- <h3>${current.name}</h3>
- <p>ID : ${current.id}</p>
- <p>Solde : <b>${current.balance} FC</b></p>
- <span class="badge ${current.active?'active':'inactive'}">
- ${current.active?'ACTIF':'INACTIF'}
- </span>
- <hr>
- <h4>Historique</h4>
- ${current.history.length ? current.history.join("<br>") : "Aucune activité"}
+ dashboard.innerHTML = `
+   <h3>Dashboard</h3>
+   <p>Rôle : <b>${currentRole}</b></p>
+   <p>Solde actuel :</p>
+   <p class="stat">${balance} FC</p>
  `;
 }
 
-// Navigation
-function view(v){
- ["dash","deposit","send","withdraw"].forEach(x=>document.getElementById(x).classList.add("hidden"));
- document.getElementById(v).classList.remove("hidden");
+function show(id){
+ ["dashboard","deposit","send","withdraw"].forEach(e=>{
+   document.getElementById(e).classList.add("hidden");
+ });
+ document.getElementById(id).classList.remove("hidden");
 }
 
-// Dépôt
 function deposit(){
- let a=+depAmt.value;
- if(a<=0)return;
- current.balance+=a;
- current.active=true;
- localStorage.adminBal-=a;
- current.history.push("Dépôt +"+a);
- save();renderDash();
+ let a=+dep.value;
+ if(a>0){balance+=a;renderDash();}
 }
 
-// Envoi
 function send(){
- if(!current.active)return alert("Compte inactif");
- let u=users().find(x=>x.id===sendID.value);
- if(!u)return alert("Introuvable");
- let a=+sendAmt.value;
- if(a>current.balance)return alert("Solde insuffisant");
- current.balance-=a;
- u.balance+=a;
- current.history.push("Envoi -"+a);
- u.history.push("Reçu +"+a);
- save(u);renderDash();
+ let a=+snd.value;
+ if(a>0 && a<=balance){balance-=a;renderDash();}
 }
 
-// Retrait
-function requestWithdraw(){
- let a=+withAmt.value;
- if(a<=0)return;
- let w=JSON.parse(localStorage.withdraws);
- w.push({id:current.id,amount:a});
- localStorage.withdraws=JSON.stringify(w);
- current.history.push("Retrait demandé "+a);
- save();renderDash();
+function withdraw(){
+ let a=+wd.value;
+ if(a>0 && a<=balance){balance-=a;renderDash();}
 }
 
-// ADMIN
-function loadAdmin(){
- adminBal.innerText=localStorage.adminBal;
- userList.innerHTML=users().map(u=>`${u.name} (${u.role}) – ${u.balance} FC – ${u.active?'ACTIF':'INACTIF'}`).join("<br>");
- let wList=JSON.parse(localStorage.withdraws);
- withdrawList.innerHTML=wList.map((w,i)=>{
-   return `<div>${w.id} : ${w.amount} FC 
-     <button onclick="approve(${i})">Valider</button></div>`;
- }).join("");
+function logout(){
+ location.reload();
 }
-
-// Valider retrait
-function approve(i){
- let wList=JSON.parse(localStorage.withdraws);
- let w=wList[i];
- let u=users().find(x=>x.id===w.id);
- if(!u)return;
- let com=0;
- if(u.balance<w.amount){ alert("Solde insuffisant pour ce retrait"); return; }
- u.balance-=w.amount+com;
- localStorage.adminBal=+localStorage.adminBal + w.amount;
- wList.splice(i,1);
- localStorage.withdraws=JSON.stringify(wList);
- save(u); loadAdmin();
- alert("Retrait confirmé : "+w.amount+" FC");
-}
-
-// Sauvegarde
-function save(extra){
- let u=users();
- let idx=u.findIndex(x=>x.id===current.id);
- if(idx>=0) u[idx]=current;
- if(extra){
-   let idx2=u.findIndex(x=>x.id===extra.id);
-   if(idx2>=0) u[idx2]=extra;
- }
- saveUsers(u);
-}
-
-// Déconnexion
-function logout(){location.reload()}
 </script>
 
 </body>
