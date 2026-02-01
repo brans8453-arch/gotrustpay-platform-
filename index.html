@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="fr">
+<!DOCTYPE html>
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <title>GoTrust Pay – MODE DEMO</title>
@@ -9,17 +10,21 @@ header{background:#0b3c5d;color:#fff;padding:15px;text-align:center}
 section{padding:15px}
 .card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
 input,select,button{width:100%;padding:10px;margin:5px 0}
-button{background:#1abc9c;border:none;color:#fff;font-weight:bold;border-radius:6px}
+button{background:#1abc9c;border:none;color:#fff;font-weight:bold;border-radius:6px;cursor:pointer}
 .hidden{display:none}
-nav button{margin:3px}
+nav button{margin:3px;cursor:pointer}
 .badge{padding:4px 8px;border-radius:5px;color:#fff;font-size:12px}
 .active{background:#1abc9c}
 </style>
 </head>
-<body><header>
+<body>
+<header>
 <h2>GoTrust Pay</h2>
 <p>Plateforme financière – MODE DEMO</p>
-</header><section id="login" class="card">
+</header>
+
+<!-- LOGIN -->
+<section id="login" class="card">
 <h3>Connexion</h3>
 <select id="role">
 <option value="client">Client</option>
@@ -30,7 +35,10 @@ nav button{margin:3px}
 <input id="password" type="password" placeholder="Mot de passe (6 chiffres)">
 <button onclick="login()">Entrer dans l’interface</button>
 <p style="font-size:12px">Connexion libre – MODE DEMO</p>
-</section><section id="client" class="hidden">
+</section>
+
+<!-- CLIENT / AGENT DASHBOARD -->
+<section id="client" class="hidden">
 <nav>
 <button onclick="show('dash')">Dashboard</button>
 <button onclick="show('deposit')">Dépôt</button>
@@ -38,19 +46,23 @@ nav button{margin:3px}
 <button onclick="show('withdraw')">Retrait</button>
 <button onclick="logout()">Déconnexion</button>
 </nav>
+
 <div id="dash" class="card"></div>
+
 <div id="deposit" class="card hidden">
 <h4>Dépôt</h4>
 <input id="depAmount" type="number" placeholder="Montant">
 <select id="depService"><option>Orange</option><option>Airtel</option><option>Vodacom</option><option>GoPay</option></select>
 <button onclick="deposit()">Confirmer</button>
 </div>
+
 <div id="send" class="card hidden">
 <h4>Envoi</h4>
 <input id="sendTo" placeholder="ID ou Numéro">
 <input id="sendAmount" type="number" placeholder="Montant">
 <button onclick="send()">Envoyer</button>
 </div>
+
 <div id="withdraw" class="card hidden">
 <h4>Retrait</h4>
 <input id="withAmount" type="number" placeholder="Montant">
@@ -58,37 +70,104 @@ nav button{margin:3px}
 <select><option>Orange</option><option>Airtel</option><option>Vodacom</option><option>GoPay</option></select>
 <button onclick="withdraw()">Confirmer</button>
 </div>
-</section><section id="admin" class="hidden">
+</section>
+
+<!-- ADMIN DASHBOARD -->
+<section id="admin" class="hidden">
 <div class="card"><h3>Administration</h3><p id="adminInfo"></p></div>
 <div class="card"><h4>Activités récentes</h4><div id="activity"></div></div>
 <button onclick="logout()">Déconnexion</button>
-</section><script>
+</section>
+
+<script>
 let current=null;
 let activities=[];
 
+// LOGIN FUNCTION
 function login(){
- let r=role.value;
- let u=username.value.trim();
- let p=password.value.trim();
- if(!/^\d{6}$/.test(p)) return alert("Mot de passe invalide");
- if(r==='admin'){
-   if(u==='GOPAY' && p==='admin243'){
-     login.style.display='none';admin.classList.remove('hidden');
-     adminInfo.innerText='Connecté en tant qu\'administrateur';return;
-   }else return alert('Accès admin refusé');
- }
- current={name:u,id:Math.floor(Math.random()*1e8),balance:0};
- login.style.display='none';client.classList.remove('hidden');renderDash();
+  const r=document.getElementById('role').value;
+  const u=document.getElementById('username').value.trim();
+  const p=document.getElementById('password').value.trim();
+
+  if(p.length<6 || !/^\d{6}$/.test(p)){
+    return alert("Mot de passe invalide (6 chiffres requis)");
+  }
+
+  if(r==='admin'){
+    if(u==='GOPAY' && p==='admin243'){
+      document.getElementById('login').style.display='none';
+      document.getElementById('admin').classList.remove('hidden');
+      document.getElementById('adminInfo').innerText="Connecté en tant qu'administrateur";
+      return;
+    } else {
+      return alert('Accès admin refusé');
+    }
+  }
+
+  // CLIENT / AGENT LOGIN DEMO (accès libre)
+  current={name:u,id:Math.floor(Math.random()*1e8),balance:0,role:r};
+  document.getElementById('login').style.display='none';
+  document.getElementById('client').classList.remove('hidden');
+  renderDash();
 }
 
+// RENDER DASHBOARD
 function renderDash(){
- dash.innerHTML=`<h3>Bienvenue ${current.name}</h3><p>ID : ${current.id}</p><p>Solde : <b>${current.balance} FC</b></p>`;
+  document.getElementById('dash').innerHTML=
+    `<h3>Bienvenue ${current.name} (${current.role})</h3>
+     <p>ID : ${current.id}</p>
+     <p>Solde : <b>${current.balance} FC</b></p>`;
 }
-function show(v){['dash','deposit','send','withdraw'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(v).classList.remove('hidden');}
-function deposit(){let a=+depAmount.value;if(a>0){current.balance+=a;log('Dépôt +'+a);renderDash();}}
-function send(){let a=+sendAmount.value;if(a>0){current.balance-=a;log('Envoi -'+a);renderDash();}}
-function withdraw(){let a=+withAmount.value;if(a>0){current.balance-=a;log('Retrait -'+a);renderDash();}}
-function log(t){activities.push(new Date().toLocaleString()+' : '+t);activity.innerHTML=activities.join('<br>');}
-function logout(){location.reload();}
-</script></body>
+
+// SHOW SECTIONS
+function show(section){
+  ['dash','deposit','send','withdraw'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+  document.getElementById(section).classList.remove('hidden');
+}
+
+// DEPOSIT
+function deposit(){
+  let a=+document.getElementById('depAmount').value;
+  if(a>0){
+    current.balance+=a;
+    log('Dépôt +'+a);
+    renderDash();
+  }
+}
+
+// SEND
+function send(){
+  let a=+document.getElementById('sendAmount').value;
+  if(a>0 && a<=current.balance){
+    current.balance-=a;
+    log('Envoi -'+a+' vers '+document.getElementById('sendTo').value);
+    renderDash();
+  } else alert("Montant invalide ou solde insuffisant");
+}
+
+// WITHDRAW
+function withdraw(){
+  let a=+document.getElementById('withAmount').value;
+  let code=document.getElementById('withCode').value;
+  if(a>0 && /^\d{6}$/.test(code)){
+    if(a<=current.balance){
+      current.balance-=a;
+      log('Retrait -'+a);
+      renderDash();
+    } else alert("Solde insuffisant");
+  } else alert("Montant ou code retrait invalide");
+}
+
+// LOG ACTIVITIES
+function log(text){
+  activities.push(new Date().toLocaleString()+" : "+text);
+  document.getElementById('activity').innerHTML=activities.join('<br>');
+}
+
+// LOGOUT
+function logout(){
+  location.reload();
+}
+</script>
+</body>
 </html>
