@@ -48,7 +48,7 @@ hr{border:none;border-top:1px solid #ddd}
 <input id="name" placeholder="Nom" />
 <input id="pin" type="password" placeholder="PIN (4 à 6 chiffres)" />
 <button onclick="login()">Entrer</button>
-<p class="small">Compte inactif sans activité</p>
+<p class="small">Après inscription, tous les comptes sont automatiquement activés</p>
 </section>
 
 <section id="client" class="hidden">
@@ -109,18 +109,18 @@ const users=()=>JSON.parse(localStorage.users);
 const saveUsers=u=>localStorage.users=JSON.stringify(u);
 const wid=()=>Math.floor(Math.random()*1e8).toString();
 
-// === Fonctions principales ===
+// Afficher l'authentification
 function showAuth(){
  home.classList.add("hidden");
  auth.classList.remove("hidden");
 }
 
+// Connexion / inscription
 function login(){
  const r=role.value;
  const n=name.value.trim();
  const p=pin.value.trim();
 
- // Validation PIN
  if(r!=="admin" && !/^\d{4,6}$/.test(p)){
    alert("PIN invalide : 4 à 6 chiffres uniquement");
    return;
@@ -145,13 +145,11 @@ function login(){
 
  if(found){
    current=found;
-   // ⚡ Activation automatique si le compte existe mais est inactif
-   if(!current.active){
-     current.active=true;
-     save();
-   }
+   // ⚡ Activation automatique pour tous les comptes existants
+   current.active=true;
+   save();
  }else{
-   // Nouveau compte actif par défaut
+   // Nouveau compte activé immédiatement
    current={id:wid(),role:r,name:n,pin:p,balance:0,active:true,history:[]};
    u.push(current);
    saveUsers(u);
@@ -162,7 +160,7 @@ function login(){
  renderDash();
 }
 
-// Dashboard
+// Tableau de bord client
 function renderDash(){
  dash.innerHTML=`
  <h3>${current.name}</h3>
