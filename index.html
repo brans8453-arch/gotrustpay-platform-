@@ -99,6 +99,7 @@ hr{border:none;border-top:1px solid #ddd}
 </section>
 
 <script>
+// Initialisation des données
 if(!localStorage.users) localStorage.users="[]";
 if(!localStorage.withdraws) localStorage.withdraws="[]";
 if(!localStorage.adminBal) localStorage.adminBal=1000000;
@@ -108,6 +109,7 @@ const users=()=>JSON.parse(localStorage.users);
 const saveUsers=u=>localStorage.users=JSON.stringify(u);
 const wid=()=>Math.floor(Math.random()*1e8).toString();
 
+// === Fonctions principales ===
 function showAuth(){
  home.classList.add("hidden");
  auth.classList.remove("hidden");
@@ -118,12 +120,13 @@ function login(){
  const n=name.value.trim();
  const p=pin.value.trim();
 
- // Validation PIN
+ // Validation PIN pour clients et agents
  if(r!=="admin" && !/^\d{4,6}$/.test(p)){
    alert("PIN invalide : 4 à 6 chiffres uniquement");
    return;
  }
 
+ // Connexion admin
  if(r==="admin"){
    if(n==="GOPAY" && p==="admin243"){
      auth.classList.add("hidden");
@@ -136,12 +139,15 @@ function login(){
    }
  }
 
+ // Connexion client / agent
  let u=users();
  let found=u.find(x=>x.name===n && x.pin===p && x.role===r);
+
  if(found){
    current=found;
  }else{
-   current={id:wid(),role:r,name:n,pin:p,balance:0,active:false,history:[]};
+   // Création nouveau compte actif par défaut
+   current={id:wid(),role:r,name:n,pin:p,balance:0,active:true,history:[]};
    u.push(current);
    saveUsers(u);
  }
@@ -151,6 +157,7 @@ function login(){
  renderDash();
 }
 
+// Affichage tableau de bord client
 function renderDash(){
  dash.innerHTML=`
  <h3>${current.name}</h3>
@@ -165,11 +172,13 @@ function renderDash(){
  `;
 }
 
+// Navigation interne
 function view(v){
  ["dash","deposit","send","withdraw"].forEach(x=>document.getElementById(x).classList.add("hidden"));
  document.getElementById(v).classList.remove("hidden");
 }
 
+// Dépôt
 function deposit(){
  let a=+depAmt.value;
  if(a<=0)return;
@@ -180,11 +189,13 @@ function deposit(){
  save();renderDash();
 }
 
+// Envoi
 function send(){
  if(!current.active)return alert("Compte inactif");
  let u=users().find(x=>x.id===sendID.value);
  if(!u)return alert("Introuvable");
  let a=+sendAmt.value;
+ if(a>current.balance)return alert("Solde insuffisant");
  current.balance-=a;
  u.balance+=a;
  current.history.push("Envoi -"+a);
@@ -192,8 +203,10 @@ function send(){
  save(u);renderDash();
 }
 
+// Retrait
 function requestWithdraw(){
  let a=+withAmt.value;
+ if(a<=0)return;
  let w=JSON.parse(localStorage.withdraws);
  w.push({id:current.id,amount:a});
  localStorage.withdraws=JSON.stringify(w);
@@ -206,7 +219,7 @@ function loadAdmin(){
  adminBal.innerText=localStorage.adminBal;
 
  // Liste utilisateurs
- userList.innerHTML=users().map(u=>`${u.name} (${u.role}) – ${u.balance} FC`).join("<br>");
+ userList.innerHTML=users().map(u=>`${u.name} (${u.role}) – ${u.balance} FC – ${u.active?'ACTIF':'INACTIF'}`).join("<br>");
 
  // Liste demandes retrait avec bouton valider
  let wList=JSON.parse(localStorage.withdraws);
@@ -223,7 +236,9 @@ function approve(i){
  let u=users().find(x=>x.id===w.id);
  if(!u)return;
 
- let com=0; // pas de commission pour simplification
+ let com=0; // pas de commission
+ if(u.balance<w.amount){ alert("Solde insuffisant pour ce retrait"); return; }
+
  u.balance-=w.amount+com;
  localStorage.adminBal=+localStorage.adminBal + w.amount;
  wList.splice(i,1);
@@ -232,14 +247,19 @@ function approve(i){
  alert("Retrait confirmé : "+w.amount+" FC");
 }
 
+// Sauvegarde
 function save(extra){
  let u=users();
  let idx=u.findIndex(x=>x.id===current.id);
- u[idx]=current;
- if(extra) u[u.findIndex(x=>x.id===extra.id)]=extra;
+ if(idx>=0) u[idx]=current;
+ if(extra){
+   let idx2=u.findIndex(x=>x.id===extra.id);
+   if(idx2>=0) u[idx2]=extra;
+ }
  saveUsers(u);
 }
 
+// Déconnexion
 function logout(){location.reload()}
 </script>
 
