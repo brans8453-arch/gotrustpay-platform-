@@ -2,18 +2,20 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>GoTrust Pay – MODE DEMO</title>
+<title>GoTrust Pay – Plateforme Financière DEMO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{margin:0;font-family:Arial;background:#f4f6f8}
-header{background:#0a2540;color:#fff;padding:15px;text-align:center}
+header{background:#0a2540;color:#fff;padding:15px;text-align:center;position:sticky;top:0}
 section{padding:15px}
 .card{background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
-button{background:#00c389;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;width:100%}
-input,select{width:100%;padding:10px;margin:8px 0}
+button{background:#00c389;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;width:100%;cursor:pointer}
+button.danger{background:#e74c3c}
+input,select,textarea{width:100%;padding:10px;margin:8px 0;box-sizing:border-box}
 .hidden{display:none}
 nav button{width:auto;margin:4px}
 .badge{background:#00c389;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
+.small{font-size:12px;color:#555}
 </style>
 </head>
 
@@ -21,7 +23,7 @@ nav button{width:auto;margin:4px}
 
 <header>
 <h2>GoTrust Pay</h2>
-<p>Plateforme financière – MODE DEMO</p>
+<p class="small">Plateforme financière – MODE DEMO</p>
 </header>
 
 <!-- ACCUEIL -->
@@ -29,7 +31,7 @@ nav button{width:auto;margin:4px}
 <div class="card">
 <h3>Bienvenue</h3>
 <p>Accédez à votre espace financier</p>
-<button onclick="openLogin()">Connexion</button>
+<button onclick="openLogin()">Connexion / Inscription</button>
 </div>
 
 <div class="card">
@@ -41,7 +43,7 @@ nav button{width:auto;margin:4px}
 <!-- CONNEXION -->
 <section id="login" class="hidden">
 <div class="card">
-<h3>Connexion</h3>
+<h3>Connexion / Inscription</h3>
 
 <label>Rôle</label>
 <select id="role">
@@ -51,44 +53,70 @@ nav button{width:auto;margin:4px}
 </select>
 
 <label>Nom / Identifiant</label>
-<input id="name" placeholder="Ex: Jean">
+<input id="name" placeholder="Ex: Jean Dupont">
 
 <button onclick="connect()">Entrer dans l’interface</button>
 
-<p style="font-size:12px;color:#555;margin-top:10px">
-Connexion libre – tous les comptes sont activés
-</p>
+<p class="small">Connexion libre – tous les comptes sont activés</p>
 </div>
 </section>
 
-<!-- UTILISATEUR -->
+<!-- UTILISATEUR (CLIENT/AGENT) -->
 <section id="user" class="hidden">
 <nav>
 <button onclick="view('dash')">Dashboard</button>
 <button onclick="view('deposit')">Dépôt</button>
+<button onclick="view('send')">Envoi</button>
 <button onclick="view('withdraw')">Retrait</button>
-<button onclick="logout()">Déconnexion</button>
+<button onclick="logout()" class="danger">Déconnexion</button>
 </nav>
 
 <div id="dash" class="card"></div>
 
 <div id="deposit" class="card hidden">
 <h4>Dépôt</h4>
-<input id="dep" type="number" placeholder="Montant">
-<button onclick="deposit()">Valider</button>
+<input id="depAmt" type="number" placeholder="Montant">
+<select id="depSrv">
+<option>Airtel Money</option>
+<option>Orange Money</option>
+<option>Vodacom M-Pesa</option>
+<option>GoPay</option>
+</select>
+<button onclick="deposit()">Confirmer</button>
+</div>
+
+<div id="send" class="card hidden">
+<h4>Envoi</h4>
+<input id="sendTo" placeholder="ID destinataire ou numéro">
+<input id="sendAmt" type="number" placeholder="Montant">
+<select id="sendSrv">
+<option>Airtel</option>
+<option>Orange</option>
+<option>Vodacom</option>
+<option>GoPay</option>
+</select>
+<button onclick="send()">Envoyer</button>
 </div>
 
 <div id="withdraw" class="card hidden">
 <h4>Retrait</h4>
-<input id="wd" type="number" placeholder="Montant">
-<button onclick="withdraw()">Confirmer</button>
+<input id="withAmt" type="number" placeholder="Montant">
+<select id="withSrv">
+<option>GoPay</option>
+<option>Airtel</option>
+<option>Orange</option>
+<option>Vodacom</option>
+</select>
+<input id="withID" placeholder="ID / Numéro">
+<input id="withCode" type="password" placeholder="Code retrait (6 chiffres)">
+<button onclick="withdraw()">Demander</button>
 </div>
 </section>
 
 <!-- ADMIN -->
 <section id="admin" class="hidden">
 <div class="card">
-<h3>Administration</h3>
+<h3>Espace Administrateur</h3>
 <span class="badge">Accès total DEMO</span>
 </div>
 
@@ -98,111 +126,136 @@ Connexion libre – tous les comptes sont activés
 </div>
 
 <div class="card">
-<h4>Publier message</h4>
-<input id="msg">
+<h4>Demandes de retrait</h4>
+<div id="withdraws"></div>
+</div>
+
+<div class="card">
+<h4>Publier message public</h4>
+<textarea id="msgTxt" placeholder="Message public"></textarea>
 <button onclick="publish()">Publier</button>
 </div>
 
-<button onclick="logout()">Déconnexion</button>
+<button onclick="logout()" class="danger">Déconnexion</button>
 </section>
 
 <script>
+/* INIT STORAGE */
 if(!localStorage.users) localStorage.users="[]";
+if(!localStorage.withdraws) localStorage.withdraws="[]";
 if(!localStorage.msg) localStorage.msg="";
 
+/* VARIABLES */
 let current=null;
 
-/* NAV */
+/* NAVIGATION */
 function openLogin(){
- home.classList.add("hidden");
- login.classList.remove("hidden");
+  home.classList.add("hidden");
+  login.classList.remove("hidden");
 }
 
-/* CONNEXION */
+/* CONNEXION LIBRE */
 function connect(){
- let r=role.value;
- let n=name.value.trim();
- if(!n){alert("Entrez votre nom");return;}
+  let r=role.value;
+  let n=name.value.trim();
+  if(!n){alert("Entrez un nom");return;}
 
- if(r==="admin"){
-   login.classList.add("hidden");
-   admin.classList.remove("hidden");
-   loadAdmin();
-   return;
- }
+  if(r==="admin"){
+    login.classList.add("hidden");
+    admin.classList.remove("hidden");
+    loadAdmin();
+    return;
+  }
 
- let users=JSON.parse(localStorage.users);
- current=users.find(u=>u.name===n && u.role===r);
+  let users=JSON.parse(localStorage.users);
+  current=users.find(u=>u.name===n && u.role===r);
+  if(!current){
+    current={
+      id:Math.floor(10000000+Math.random()*90000000),
+      name:n,
+      role:r,
+      balance:0,
+      history:[]
+    };
+    users.push(current);
+    localStorage.users=JSON.stringify(users);
+  }
 
- if(!current){
-   current={
-     id:Math.floor(10000000+Math.random()*90000000),
-     name:n,
-     role:r,
-     balance:0,
-     history:[]
-   };
-   users.push(current);
-   localStorage.users=JSON.stringify(users);
- }
-
- login.classList.add("hidden");
- user.classList.remove("hidden");
- render();
+  login.classList.add("hidden");
+  user.classList.remove("hidden");
+  renderDash();
 }
 
-/* DASH */
-function render(){
- dash.innerHTML=`
- <h3>${current.name}</h3>
- <p>ID : ${current.id}</p>
- <p>Solde : <b>${current.balance} FC</b></p>
- <span class="badge">ACTIF</span>
- <hr>
- ${current.history.join("<br>")}
- `;
+/* DASHBOARD */
+function renderDash(){
+  dash.innerHTML=`
+    <h3>${current.name}</h3>
+    <p>ID : ${current.id}</p>
+    <p>Solde : <b>${current.balance} FC</b></p>
+    <span class="badge">ACTIF</span>
+    <hr>
+    <h4>Historique</h4>
+    ${current.history.length?current.history.join("<br>"):"Aucune activité"}
+  `;
 }
 
-/* VIEWS */
+/* VUES */
 function view(v){
- ["dash","deposit","withdraw"].forEach(x=>document.getElementById(x).classList.add("hidden"));
- document.getElementById(v).classList.remove("hidden");
+  ["dash","deposit","send","withdraw"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+  document.getElementById(v).classList.remove("hidden");
 }
 
-/* ACTIONS */
+/* ACTIONS CLIENT */
 function deposit(){
- let a=+dep.value;
- if(a<=0)return;
- current.balance+=a;
- current.history.push("Dépôt +"+a);
- save();render();
+  let a=+depAmt.value;
+  if(a<=0){alert("Montant invalide");return;}
+  current.balance+=a;
+  current.history.push("Dépôt +"+a);
+  save(); renderDash();
+}
+function send(){
+  let a=+sendAmt.value;
+  if(a<=0 || a>current.balance){alert("Montant invalide");return;}
+  current.balance-=a;
+  current.history.push("Envoi -"+a);
+  save(); renderDash();
 }
 function withdraw(){
- let a=+wd.value;
- if(a<=0||a>current.balance)return;
- current.balance-=a;
- current.history.push("Retrait -"+a);
- save();render();
+  let a=+withAmt.value;
+  if(a<=0 || a>current.balance){alert("Montant invalide");return;}
+  current.balance-=a;
+  current.history.push("Retrait -"+a);
+  save(); renderDash();
 }
 
 /* ADMIN */
 function loadAdmin(){
- publicMsg.innerText=localStorage.msg||"Aucune annonce";
- users.innerHTML=JSON.parse(localStorage.users)
- .map(u=>`${u.name} (${u.role}) – ${u.balance} FC`).join("<br>");
+  publicMsg.innerText=localStorage.msg||"Aucune annonce";
+  let users=JSON.parse(localStorage.users);
+  let list=users.map(u=>`${u.name} (${u.role}) – ${u.balance} FC`).join("<br>");
+  usersDiv=document.getElementById("users");
+  if(usersDiv) usersDiv.innerHTML=list;
+
+  // Afficher demandes retrait
+  let w=JSON.parse(localStorage.withdraws);
+  let wList=w.map(wd=>`${wd.id} : ${wd.amount} FC`).join("<br>");
+  if(document.getElementById("withdraws")) document.getElementById("withdraws").innerHTML=wList;
 }
 function publish(){
- localStorage.msg=msg.value;
- publicMsg.innerText=msg.value;
- alert("Message publié");
+  localStorage.msg=msgTxt.value;
+  publicMsg.innerText=msgTxt.value;
+  alert("Message publié");
 }
 
-/* SAVE */
+/* SAVE UTILISATEUR */
 function save(){
- let users=JSON.parse(localStorage.users);
- users[users.findIndex(u=>u.id===current.id)]=current;
- localStorage.users=JSON.stringify(users);
+  let users=JSON.parse(localStorage.users);
+  let idx=users.findIndex(u=>u.id===current.id);
+  if(idx>=0) users[idx]=current;
+  localStorage.users=JSON.stringify(users);
 }
+
+/* LOGOUT */
 function logout(){location.reload();}
 </script>
 
