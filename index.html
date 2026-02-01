@@ -109,7 +109,7 @@ const users=()=>JSON.parse(localStorage.users);
 const saveUsers=u=>localStorage.users=JSON.stringify(u);
 const wid=()=>Math.floor(Math.random()*1e8).toString();
 
-// Afficher l'authentification
+// Afficher formulaire
 function showAuth(){
  home.classList.add("hidden");
  auth.classList.remove("hidden");
@@ -126,16 +126,18 @@ function login(){
    return;
  }
 
- // Connexion admin
+ // Connexion admin fiable
  if(r==="admin"){
-   if(n==="GOPAY" && p==="admin243"){
-     auth.classList.add("hidden");
-     admin.classList.remove("hidden");
-     loadAdmin();
-     return;
-   }else{
-     alert("Accès administrateur refusé");
-     return;
+   const nomAdmin = n.toUpperCase().trim();
+   const pinAdmin = p.trim();
+   if(nomAdmin === "GOPAY" && pinAdmin === "admin243"){
+       auth.classList.add("hidden");
+       admin.classList.remove("hidden");
+       loadAdmin();
+       return;
+   } else {
+       alert("Accès administrateur refusé : nom ou PIN incorrect");
+       return;
    }
  }
 
@@ -145,11 +147,9 @@ function login(){
 
  if(found){
    current=found;
-   // ⚡ Activation automatique pour tous les comptes existants
-   current.active=true;
+   current.active = true; // ⚡ Activation automatique pour tous
    save();
- }else{
-   // Nouveau compte activé immédiatement
+ } else {
    current={id:wid(),role:r,name:n,pin:p,balance:0,active:true,history:[]};
    u.push(current);
    saveUsers(u);
@@ -160,7 +160,7 @@ function login(){
  renderDash();
 }
 
-// Tableau de bord client
+// Tableau de bord
 function renderDash(){
  dash.innerHTML=`
  <h3>${current.name}</h3>
