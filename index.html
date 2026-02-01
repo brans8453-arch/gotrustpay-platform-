@@ -48,7 +48,7 @@ hr{border:none;border-top:1px solid #ddd}
 <input id="name" placeholder="Nom" />
 <input id="pin" type="password" placeholder="Mot de passe" />
 <button onclick="login()">Entrer</button>
-<p class="small">Admin : GOPAY / admin243</p>
+<p class="small">Compte inactif sans activité</p>
 </section>
 
 <section id="client" class="hidden">
@@ -81,7 +81,7 @@ hr{border:none;border-top:1px solid #ddd}
 
 <section id="admin" class="hidden">
 <div class="card">
-<h3>Admin – GOPAY</h3>
+<h3>Administration</h3>
 <p>Solde plateforme : <b id="adminBal"></b> FC</p>
 </div>
 
@@ -114,19 +114,35 @@ function showAuth(){
 }
 
 function login(){
- const r=role.value,n=name.value,p=pin.value;
+ const r=role.value;
+ const n=name.value.trim();
+ const p=pin.value.trim();
+
  if(r==="admin"){
-  if(n!=="GOPAY"||p!=="admin243") return alert("Accès refusé");
-  auth.classList.add("hidden");admin.classList.remove("hidden");loadAdmin();return;
+   if(n==="GOPAY" && p==="admin243"){
+     auth.classList.add("hidden");
+     admin.classList.remove("hidden");
+     loadAdmin();
+     return;
+   }else{
+     alert("Accès administrateur refusé");
+     return;
+   }
  }
+
  let u=users();
- let found=u.find(x=>x.name===n&&x.pin===p&&x.role===r);
- if(found){current=found;}
- else{
-  current={id:wid(),role:r,name:n,pin:p,balance:0,active:false,history:[]};
-  u.push(current);saveUsers(u);
+ let found=u.find(x=>x.name===n && x.pin===p && x.role===r);
+ if(found){
+   current=found;
+ }else{
+   current={id:wid(),role:r,name:n,pin:p,balance:0,active:false,history:[]};
+   u.push(current);
+   saveUsers(u);
  }
- auth.classList.add("hidden");client.classList.remove("hidden");renderDash();
+
+ auth.classList.add("hidden");
+ client.classList.remove("hidden");
+ renderDash();
 }
 
 function renderDash(){
@@ -134,10 +150,12 @@ function renderDash(){
  <h3>${current.name}</h3>
  <p>ID : ${current.id}</p>
  <p>Solde : <b>${current.balance} FC</b></p>
- <span class="badge ${current.active?'active':'inactive'}">${current.active?'ACTIF':'INACTIF'}</span>
+ <span class="badge ${current.active?'active':'inactive'}">
+ ${current.active?'ACTIF':'INACTIF'}
+ </span>
  <hr>
  <h4>Historique</h4>
- ${current.history.join("<br>")||"Aucune activité"}
+ ${current.history.length ? current.history.join("<br>") : "Aucune activité"}
  `;
 }
 
@@ -147,8 +165,10 @@ function view(v){
 }
 
 function deposit(){
- let a=+depAmt.value;if(a<=0)return;
- current.balance+=a;current.active=true;
+ let a=+depAmt.value;
+ if(a<=0)return;
+ current.balance+=a;
+ current.active=true;
  localStorage.adminBal-=a;
  current.history.push("Dépôt +"+a);
  save();renderDash();
@@ -159,7 +179,8 @@ function send(){
  let u=users().find(x=>x.id===sendID.value);
  if(!u)return alert("Introuvable");
  let a=+sendAmt.value;
- current.balance-=a;u.balance+=a;
+ current.balance-=a;
+ u.balance+=a;
  current.history.push("Envoi -"+a);
  u.history.push("Reçu +"+a);
  save(u);renderDash();
@@ -177,7 +198,8 @@ function requestWithdraw(){
 function loadAdmin(){
  adminBal.innerText=localStorage.adminBal;
  userList.innerHTML=users().map(u=>`${u.name} (${u.role}) – ${u.balance} FC`).join("<br>");
- withdrawList.innerHTML=JSON.parse(localStorage.withdraws).map(w=>`${w.id} : ${w.amount} FC`).join("<br>");
+ withdrawList.innerHTML=JSON.parse(localStorage.withdraws)
+   .map(w=>`${w.id} : ${w.amount} FC`).join("<br>");
 }
 
 function save(extra){
