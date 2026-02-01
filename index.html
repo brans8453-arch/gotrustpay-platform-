@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>GoTrust Pay – Produit Final</title>
+<title>GoTrust Pay – Version Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 :root{
@@ -32,7 +32,7 @@ hr{border:none;border-top:1px solid #ddd}
 
 <header>
 <h2>GoTrust Pay</h2>
-<p>Plateforme financière inclusive – Version finale</p>
+<p>Plateforme financière – Version Pro GitHub Pages</p>
 </header>
 
 <section id="home" class="card">
@@ -46,7 +46,7 @@ hr{border:none;border-top:1px solid #ddd}
 <option value="admin">Administrateur</option>
 </select>
 <input id="name" placeholder="Nom" />
-<input id="pin" type="password" placeholder="Mot de passe" />
+<input id="pin" type="password" placeholder="PIN (4 à 6 chiffres)" />
 <button onclick="login()">Entrer</button>
 <p class="small">Compte inactif sans activité</p>
 </section>
@@ -81,7 +81,7 @@ hr{border:none;border-top:1px solid #ddd}
 
 <section id="admin" class="hidden">
 <div class="card">
-<h3>Administration</h3>
+<h3>Administration – GOPAY</h3>
 <p>Solde plateforme : <b id="adminBal"></b> FC</p>
 </div>
 
@@ -117,6 +117,12 @@ function login(){
  const r=role.value;
  const n=name.value.trim();
  const p=pin.value.trim();
+
+ // Validation PIN
+ if(r!=="admin" && !/^\d{4,6}$/.test(p)){
+   alert("PIN invalide : 4 à 6 chiffres uniquement");
+   return;
+ }
 
  if(r==="admin"){
    if(n==="GOPAY" && p==="admin243"){
@@ -195,16 +201,41 @@ function requestWithdraw(){
  save();renderDash();
 }
 
+// ADMIN
 function loadAdmin(){
  adminBal.innerText=localStorage.adminBal;
+
+ // Liste utilisateurs
  userList.innerHTML=users().map(u=>`${u.name} (${u.role}) – ${u.balance} FC`).join("<br>");
- withdrawList.innerHTML=JSON.parse(localStorage.withdraws)
-   .map(w=>`${w.id} : ${w.amount} FC`).join("<br>");
+
+ // Liste demandes retrait avec bouton valider
+ let wList=JSON.parse(localStorage.withdraws);
+ withdrawList.innerHTML=wList.map((w,i)=>{
+   return `<div>${w.id} : ${w.amount} FC 
+     <button onclick="approve(${i})">Valider</button></div>`;
+ }).join("");
+}
+
+// Valider retrait
+function approve(i){
+ let wList=JSON.parse(localStorage.withdraws);
+ let w=wList[i];
+ let u=users().find(x=>x.id===w.id);
+ if(!u)return;
+
+ let com=0; // pas de commission pour simplification
+ u.balance-=w.amount+com;
+ localStorage.adminBal=+localStorage.adminBal + w.amount;
+ wList.splice(i,1);
+ localStorage.withdraws=JSON.stringify(wList);
+ save(u); loadAdmin();
+ alert("Retrait confirmé : "+w.amount+" FC");
 }
 
 function save(extra){
  let u=users();
- u[u.findIndex(x=>x.id===current.id)]=current;
+ let idx=u.findIndex(x=>x.id===current.id);
+ u[idx]=current;
  if(extra) u[u.findIndex(x=>x.id===extra.id)]=extra;
  saveUsers(u);
 }
