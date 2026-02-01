@@ -99,7 +99,7 @@ hr{border:none;border-top:1px solid #ddd}
 </section>
 
 <script>
-// Initialisation des données
+// Initialisation
 if(!localStorage.users) localStorage.users="[]";
 if(!localStorage.withdraws) localStorage.withdraws="[]";
 if(!localStorage.adminBal) localStorage.adminBal=1000000;
@@ -120,7 +120,7 @@ function login(){
  const n=name.value.trim();
  const p=pin.value.trim();
 
- // Validation PIN pour clients et agents
+ // Validation PIN
  if(r!=="admin" && !/^\d{4,6}$/.test(p)){
    alert("PIN invalide : 4 à 6 chiffres uniquement");
    return;
@@ -145,8 +145,13 @@ function login(){
 
  if(found){
    current=found;
+   // ⚡ Activation automatique si le compte existe mais est inactif
+   if(!current.active){
+     current.active=true;
+     save();
+   }
  }else{
-   // Création nouveau compte actif par défaut
+   // Nouveau compte actif par défaut
    current={id:wid(),role:r,name:n,pin:p,balance:0,active:true,history:[]};
    u.push(current);
    saveUsers(u);
@@ -157,7 +162,7 @@ function login(){
  renderDash();
 }
 
-// Affichage tableau de bord client
+// Dashboard
 function renderDash(){
  dash.innerHTML=`
  <h3>${current.name}</h3>
@@ -172,7 +177,7 @@ function renderDash(){
  `;
 }
 
-// Navigation interne
+// Navigation
 function view(v){
  ["dash","deposit","send","withdraw"].forEach(x=>document.getElementById(x).classList.add("hidden"));
  document.getElementById(v).classList.remove("hidden");
@@ -217,11 +222,7 @@ function requestWithdraw(){
 // ADMIN
 function loadAdmin(){
  adminBal.innerText=localStorage.adminBal;
-
- // Liste utilisateurs
  userList.innerHTML=users().map(u=>`${u.name} (${u.role}) – ${u.balance} FC – ${u.active?'ACTIF':'INACTIF'}`).join("<br>");
-
- // Liste demandes retrait avec bouton valider
  let wList=JSON.parse(localStorage.withdraws);
  withdrawList.innerHTML=wList.map((w,i)=>{
    return `<div>${w.id} : ${w.amount} FC 
@@ -235,10 +236,8 @@ function approve(i){
  let w=wList[i];
  let u=users().find(x=>x.id===w.id);
  if(!u)return;
-
- let com=0; // pas de commission
+ let com=0;
  if(u.balance<w.amount){ alert("Solde insuffisant pour ce retrait"); return; }
-
  u.balance-=w.amount+com;
  localStorage.adminBal=+localStorage.adminBal + w.amount;
  wList.splice(i,1);
