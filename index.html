@@ -2,15 +2,15 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>GoTrust Pay – Login Réinitialisé</title>
+<title>GoTrust Pay – DEMO FONCTIONNEL</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{margin:0;font-family:Arial;background:#f4f6f8}
 header{background:#0a2540;color:#fff;padding:15px;text-align:center}
 .card{background:#fff;border-radius:10px;padding:15px;margin:15px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
-button{background:#00c389;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;width:100%;cursor:pointer;margin-top:8px}
+button{background:#00c389;color:#fff;border:none;padding:12px;border-radius:6px;font-weight:bold;width:100%;cursor:pointer;margin-top:6px}
 button.danger{background:#e74c3c}
-input,select{width:100%;padding:10px;margin:6px 0;box-sizing:border-box}
+input,select{width:100%;padding:10px;margin:6px 0}
 .hidden{display:none}
 .badge{background:#00c389;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px}
 nav button{margin:4px}
@@ -20,8 +20,8 @@ nav button{margin:4px}
 <body>
 
 <header>
-<h2>GoTrust Pay – MODE DEMO</h2>
-<p>Connexion sécurisée</p>
+<h2>GoTrust Pay</h2>
+<p>Plateforme financière – MODE DEMO</p>
 </header>
 
 <!-- ACCUEIL -->
@@ -31,27 +31,24 @@ nav button{margin:4px}
 <button onclick="openLogin()">Connexion</button>
 </section>
 
-<!-- LOGIN -->
+<!-- LOGIN (NE BLOQUE PLUS) -->
 <section id="login" class="card hidden">
 <h3>Connexion</h3>
 
-<label>Rôle</label>
 <select id="role">
 <option value="client">Client</option>
 <option value="agent">Agent</option>
 <option value="admin">Administrateur</option>
 </select>
 
-<label>Nom / Identifiant</label>
-<input id="name" placeholder="Ex : GOPAY">
-
-<label>Mot de passe (6 chiffres minimum)</label>
-<input id="password" type="password" placeholder="Mot de passe">
+<input id="name" placeholder="Nom ou Identifiant">
+<input id="password" type="password" placeholder="Mot de passe (6 chiffres min)">
 
 <button onclick="login()">Entrer dans l’interface</button>
+
 <p style="font-size:12px;color:#555">
 Admin : GOPAY / admin243<br>
-Client & Agent : mot de passe de 6 chiffres obligatoire
+Clients & Agents : accès libre (6 chiffres min)
 </p>
 </section>
 
@@ -68,18 +65,41 @@ Client & Agent : mot de passe de 6 chiffres obligatoire
 <div id="dash" class="card"></div>
 
 <div id="deposit" class="card hidden">
-<input id="depAmt" type="number" placeholder="Montant dépôt">
-<button onclick="deposit()">Confirmer</button>
+<h4>Dépôt</h4>
+<input id="depAmt" type="number" placeholder="Montant">
+<select id="depService">
+<option>Orange</option>
+<option>Airtel</option>
+<option>Vodacom</option>
+<option>GoPay</option>
+</select>
+<button onclick="deposit()">Valider</button>
 </div>
 
 <div id="send" class="card hidden">
+<h4>Envoi</h4>
+<input id="sendTo" placeholder="ID ou Numéro">
 <input id="sendAmt" type="number" placeholder="Montant">
-<button onclick="send()">Envoyer</button>
+<select id="sendService">
+<option>Orange</option>
+<option>Airtel</option>
+<option>Vodacom</option>
+<option>GoPay</option>
+</select>
+<button onclick="send()">Confirmer</button>
 </div>
 
 <div id="withdraw" class="card hidden">
+<h4>Retrait</h4>
 <input id="withAmt" type="number" placeholder="Montant">
-<button onclick="withdraw()">Retirer</button>
+<select id="withService">
+<option>Orange</option>
+<option>Airtel</option>
+<option>Vodacom</option>
+<option>GoPay</option>
+</select>
+<input placeholder="Code retrait (6 chiffres)">
+<button onclick="withdraw()">Demander</button>
 </div>
 </section>
 
@@ -91,16 +111,16 @@ Client & Agent : mot de passe de 6 chiffres obligatoire
 </div>
 
 <div class="card">
-<h4>Utilisateurs enregistrés</h4>
-<div id="userList"></div>
+<h4>Activité récente (DEMO)</h4>
+<div id="adminLog"></div>
 </div>
 
 <button class="danger" onclick="logout()">Déconnexion</button>
 </section>
 
 <script>
-if(!localStorage.users) localStorage.users="[]";
 let current=null;
+let logs=[];
 
 function openLogin(){
  home.classList.add("hidden");
@@ -112,20 +132,14 @@ function login(){
  const n=name.value.trim();
  const p=password.value.trim();
 
- if(!n || !p){alert("Champs obligatoires"); return;}
+ if(!n || !p){alert("Champs obligatoires");return;}
 
- // Mot de passe 6 chiffres minimum
- if(!/^\d{6,}$/.test(p) && r!=="admin"){
-   alert("Mot de passe invalide : 6 chiffres minimum");
-   return;
- }
-
- // ADMIN FIXE
+ // ADMIN FIXE (SEUL CAS VÉRIFIÉ)
  if(r==="admin"){
    if(n==="GOPAY" && p==="admin243"){
      login.classList.add("hidden");
      admin.classList.remove("hidden");
-     loadAdmin();
+     adminLog.innerHTML="Connexion admin réussie";
      return;
    }else{
      alert("Identifiants admin incorrects");
@@ -133,13 +147,18 @@ function login(){
    }
  }
 
- // CLIENT / AGENT : accès facile (pas de création automatique)
- let users=JSON.parse(localStorage.users);
- current=users.find(u=>u.name===n && u.role===r && u.password===p);
- if(!current){
-   alert("Utilisateur introuvable ou mot de passe incorrect");
+ // CLIENT / AGENT → ACCÈS TOUJOURS AUTORISÉ
+ if(!/^\d{6,}$/.test(p)){
+   alert("Mot de passe : 6 chiffres minimum");
    return;
  }
+
+ current={
+   name:n,
+   role:r,
+   balance:0,
+   history:[]
+ };
 
  login.classList.add("hidden");
  user.classList.remove("hidden");
@@ -149,11 +168,11 @@ function login(){
 function renderDash(){
  dash.innerHTML=`
  <h3>${current.name}</h3>
- <p>ID : ${current.id}</p>
+ <p>Rôle : ${current.role}</p>
  <p>Solde : <b>${current.balance} FC</b></p>
  <span class="badge">ACTIF</span>
  <hr>
- ${current.history && current.history.length ? current.history.join("<br>") : "Aucune activité"}
+ ${current.history.length?current.history.join("<br>"):"Aucune activité"}
  `;
 }
 
@@ -162,43 +181,35 @@ function view(v){
  document.getElementById(v).classList.remove("hidden");
 }
 
+/* VALIDATIONS SIMULÉES */
 function deposit(){
  let a=+depAmt.value;
- if(a<=0) return;
+ let s=depService.value;
+ if(a<=0)return;
  current.balance+=a;
- current.history.push("Dépôt +"+a);
- save(); renderDash();
+ current.history.push(`Dépôt ${s} +${a}`);
+ logs.push(`Dépôt ${a} via ${s}`);
+ renderDash();
 }
+
 function send(){
  let a=+sendAmt.value;
- if(a<=0 || a>current.balance) return;
+ if(a<=0 || a>current.balance)return;
  current.balance-=a;
- current.history.push("Envoi -"+a);
- save(); renderDash();
+ current.history.push(`Envoi -${a} (${sendService.value})`);
+ logs.push(`Envoi ${a}`);
+ renderDash();
 }
+
 function withdraw(){
  let a=+withAmt.value;
- if(a<=0 || a>current.balance) return;
+ if(a<=0 || a>current.balance)return;
  current.balance-=a;
- current.history.push("Retrait -"+a);
- save(); renderDash();
+ current.history.push(`Retrait -${a} (${withService.value})`);
+ logs.push(`Retrait ${a}`);
+ renderDash();
 }
 
-/* ADMIN */
-function loadAdmin(){
- let usersArr=JSON.parse(localStorage.users);
- userList.innerHTML=usersArr.map(u=>`${u.name} (${u.role}) – ${u.balance || 0} FC`).join("<br>");
-}
-
-/* SAVE */
-function save(){
- let users=JSON.parse(localStorage.users);
- let i=users.findIndex(u=>u.id===current.id);
- if(i>=0) users[i]=current;
- localStorage.users=JSON.stringify(users);
-}
-
-/* LOGOUT */
 function logout(){location.reload();}
 </script>
 
