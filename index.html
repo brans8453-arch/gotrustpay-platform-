@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>GoTrust Pay – MODE DEMO</title>
+<title>GoTrust Pay – VERSION PRÉ-RÉEL AVANCÉE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body{margin:0;font-family:Arial;background:#f4f6f8}
@@ -20,12 +20,12 @@ nav button{margin:3px;cursor:pointer}
 <body>
 <header>
 <h2>GoTrust Pay</h2>
-<p>Plateforme financière – MODE DEMO</p>
+<p>Plateforme financière – VERSION PRÉ-RÉEL AVANCÉE</p>
 </header>
 
-<!-- LOGIN -->
+<!-- LOGIN / CREATION -->
 <section id="login" class="card">
-<h3>Connexion</h3>
+<h3>Connexion / Création de compte</h3>
 <select id="role">
 <option value="client">Client</option>
 <option value="agent">Agent</option>
@@ -33,8 +33,9 @@ nav button{margin:3px;cursor:pointer}
 </select>
 <input id="username" placeholder="Nom ou Identifiant">
 <input id="password" type="password" placeholder="Mot de passe (6 chiffres)">
-<button onclick="login()">Entrer dans l’interface</button>
-<p style="font-size:12px">Connexion libre – MODE DEMO</p>
+<button onclick="login()">Entrer</button>
+<button onclick="createAccount()">Créer un compte</button>
+<p style="font-size:12px">Connexion libre pour clients/agents – Admin: GOPAY/admin243</p>
 </section>
 
 <!-- CLIENT / AGENT DASHBOARD -->
@@ -58,7 +59,7 @@ nav button{margin:3px;cursor:pointer}
 
 <div id="send" class="card hidden">
 <h4>Envoi</h4>
-<input id="sendTo" placeholder="ID ou Numéro">
+<input id="sendTo" placeholder="ID ou Nom du destinataire">
 <input id="sendAmount" type="number" placeholder="Montant">
 <button onclick="send()">Envoyer</button>
 </div>
@@ -81,17 +82,15 @@ nav button{margin:3px;cursor:pointer}
 
 <script>
 let current=null;
-let activities=[];
+
+// INITIALISATION DES COMPTES EXISTANTS
+let users=JSON.parse(localStorage.getItem('users')||'{}');
 
 // LOGIN FUNCTION
 function login(){
   const r=document.getElementById('role').value;
   const u=document.getElementById('username').value.trim();
   const p=document.getElementById('password').value.trim();
-
-  if(p.length<6 || !/^\d{6}$/.test(p)){
-    return alert("Mot de passe invalide (6 chiffres requis)");
-  }
 
   if(r==='admin'){
     if(u==='GOPAY' && p==='admin243'){
@@ -104,19 +103,40 @@ function login(){
     }
   }
 
-  // CLIENT / AGENT LOGIN DEMO (accès libre)
-  current={name:u,id:Math.floor(Math.random()*1e8),balance:0,role:r};
-  document.getElementById('login').style.display='none';
-  document.getElementById('client').classList.remove('hidden');
-  renderDash();
+  // LOGIN CLIENT / AGENT
+  if(users[u] && users[u].password===p){
+    current={...users[u]};
+    document.getElementById('login').style.display='none';
+    document.getElementById('client').classList.remove('hidden');
+    renderDash();
+  } else {
+    alert("Utilisateur inconnu ou mot de passe incorrect");
+  }
 }
 
-// RENDER DASHBOARD
+// CREATION DE COMPTE CLIENT / AGENT
+function createAccount(){
+  const r=document.getElementById('role').value;
+  const u=document.getElementById('username').value.trim();
+  const p=document.getElementById('password').value.trim();
+
+  if(r==='admin') return alert("Impossible de créer un compte admin ici");
+  if(!/^\d{6}$/.test(p)) return alert("Mot de passe invalide (6 chiffres requis)");
+  if(!u) return alert("Nom ou identifiant requis");
+  if(users[u]) return alert("Nom déjà utilisé");
+
+  users[u]={name:u,role:r,id:Math.floor(Math.random()*1e8),balance:0,password:p,activities:[]};
+  localStorage.setItem('users',JSON.stringify(users));
+  alert("Compte créé avec succès ! Vous pouvez maintenant vous connecter");
+}
+
+// DASHBOARD
 function renderDash(){
-  document.getElementById('dash').innerHTML=
-    `<h3>Bienvenue ${current.name} (${current.role})</h3>
-     <p>ID : ${current.id}</p>
-     <p>Solde : <b>${current.balance} FC</b></p>`;
+  const dash=document.getElementById('dash');
+  dash.innerHTML=`<h3>Bienvenue ${current.name} (${current.role})</h3>
+  <p>ID : ${current.id}</p>
+  <p>Solde : <b>${current.balance} FC</b></p>`;
+  updateActivity();
 }
 
 // SHOW SECTIONS
@@ -127,41 +147,62 @@ function show(section){
 
 // DEPOSIT
 function deposit(){
-  let a=+document.getElementById('depAmount').value;
+  const a=+document.getElementById('depAmount').value;
   if(a>0){
     current.balance+=a;
-    log('Dépôt +'+a);
+    log(`Dépôt +${a} via ${document.getElementById('depService').value}`);
     renderDash();
-  }
+    saveUser();
+  } else alert("Montant invalide");
 }
 
 // SEND
 function send(){
-  let a=+document.getElementById('sendAmount').value;
+  const a=+document.getElementById('sendAmount').value;
+  const dest=document.getElementById('sendTo').value.trim();
+  if(!dest) return alert("Destinataire requis");
+  if(!users[dest]) return alert("Destinataire inexistant");
   if(a>0 && a<=current.balance){
     current.balance-=a;
-    log('Envoi -'+a+' vers '+document.getElementById('sendTo').value);
+    users[dest].balance+=a;
+    log(`Envoi -${a} vers ${dest}`);
+    users[dest].activities.push(`${new Date().toLocaleString()} : Reçu +${a} de ${current.name}`);
     renderDash();
+    saveUser();
   } else alert("Montant invalide ou solde insuffisant");
 }
 
 // WITHDRAW
 function withdraw(){
-  let a=+document.getElementById('withAmount').value;
-  let code=document.getElementById('withCode').value;
+  const a=+document.getElementById('withAmount').value;
+  const code=document.getElementById('withCode').value;
   if(a>0 && /^\d{6}$/.test(code)){
     if(a<=current.balance){
       current.balance-=a;
-      log('Retrait -'+a);
+      log(`Retrait -${a} via ${document.querySelector('#withdraw select').value}`);
       renderDash();
+      saveUser();
     } else alert("Solde insuffisant");
   } else alert("Montant ou code retrait invalide");
 }
 
 // LOG ACTIVITIES
 function log(text){
-  activities.push(new Date().toLocaleString()+" : "+text);
-  document.getElementById('activity').innerHTML=activities.join('<br>');
+  const now=new Date().toLocaleString();
+  current.activities=current.activities||[];
+  current.activities.push(`${now} : ${text}`);
+  updateActivity();
+}
+
+// UPDATE ACTIVITIES
+function updateActivity(){
+  document.getElementById('activity').innerHTML=(current.activities||[]).join('<br>');
+}
+
+// SAVE USER DATA
+function saveUser(){
+  users[current.name]=current;
+  localStorage.setItem('users',JSON.stringify(users));
 }
 
 // LOGOUT
